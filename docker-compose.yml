@@ -1,0 +1,19 @@
+services:
+  opencapper-telegram:
+    container_name: opencapper-telegram
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    volumes:
+      - opencapper-telegram-data:/app/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  opencapper-telegram-data:
