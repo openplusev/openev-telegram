@@ -1,31 +1,33 @@
 # CLAUDE.md: openev-telegram
 
-Product decisions live in `../claude.md`. The web app and API are the `openev` repo, the
-Discord bot is `openev-bot`; this repo mirrors the bot's structure.
+OpenEV alert bot for Telegram. The API is `../openev-api` (Rust, OpenAPI at `/v1/openapi.json`),
+the web app is `../openev`, the Discord bot is `../openev-bot`; alert behaviour and wording mirror
+the Discord bot (`src/core/embeds/alert.embed.ts` there).
 
 ## Rules
 
 - bun for everything. No tests unless asked.
 - No dashes as punctuation (em, en, `--`), no Unicode arrows, curly quotes or ellipsis, no emojis. Applies to code, comments, docs, buttons, messages and commit messages.
 - Comments only for a non obvious why, one terse line.
-- Never `as` to silence a type. The single allowed cast is the JSON boundary in `src/lib/api.ts`.
-- No barrel files. No TS enums: union literals derived from `as const` arrays (`src/shared/config/sports.ts`).
-- No database here. State belongs to the API; the one exception is the results feed file in `DATA_DIR`.
+- Never `as` to silence a type. JSON boundaries take an annotated `const x: T = JSON.parse(...)` (`src/lib/openev/events.ts`) or a runtime guard (`src/lib/openev/internal.ts`).
+- No barrel files. No TS enums: union literals derived from `as const` arrays (`ALERT_CONFIDENCES`).
+- No database here. State belongs to the API; the exceptions are the JSON files in `DATA_DIR`, written only through `src/lib/state.ts`.
+- OpenEV types are generated (`bun run api:types`, `src/lib/openev/schema.d.ts`), never written by hand. The internal endpoints are not in the spec yet; once they are, replace the hand checks in `src/lib/openev/internal.ts` with the generated types.
 - Every message is sent with `parse_mode: "HTML"`: pass every user or API string through `esc` or `link` from `src/core/utils/html.utils.ts`.
 - No Co-Authored-By or AI references in git.
 
 ## Traps
 
-- The API contract and types are mirrored by hand from `openev-bot/src/lib/api.ts` (no shared package) plus the Telegram parts. Change the API, both bots and both READMEs together.
-- Telegram chats map to `guildId` `tg:<chatId>` (`guildIdFor` in `results.feed.ts`). Group chat ids are negative; a group upgraded to a supergroup gets a new id and starts a fresh record.
-- Every command is a grammY `Composer` and must be added in `src/bot/index.ts`, or it never runs.
-- Callback data is capped at 64 bytes, so `/pick` buttons carry only `pk:<action>:<index>` into the in memory session (`src/core/services/pick.session.ts`). Sessions are keyed by chat and user and bound to one message id; a restart drops them.
-- Every callback query must be answered, or the button spinner hangs for the user.
-- `editMessageText` without `reply_markup` removes the keyboard; "message is not modified" is swallowed in `editHtml`.
-- `/record` and `/pick` key profiles by Telegram username, which users may not have. `GroupAnonymousBot` (anonymous admins) is rejected in `/pick`.
-- In groups with privacy mode on, the bot only sees commands, which is all it needs. `/pick@Bot` works because `bot.init()` runs before polling.
-- The results feed only polls chats where a pick was locked through this bot. Watermarks advance per posted pick; a failed send is skipped, a 429 is retried next tick, a 403 drops the chat.
-- `DATA_DIR` must be writable by distroless `nonroot`: the Dockerfile copies an owned `/app/data` so the named volume inherits it. A bind mount would need `chown 65532`.
+- Every command is a grammY `Composer` and must be added in `src/bot/index.ts`, or it never runs. `command()` also matches channel posts, which is why `allowed_updates` includes `channel_post`.
+- Transport is the API WebSocket (`/v1/ws` on `openev-api:8080` over the `proxy` network), not Valkey: `openev-valkey` is only on the API stack's own project network. The API closes a socket silent for 60 s, so the bot sends `{"type":"ping"}` every 20 s.
+- The bot posts what the ledger records (`ledger_added`), never `/v1/value-bets` directly. Safe EV is not in a ledger entry; it comes from `GET /v1/value-bets/{id}` and is shown only while the alerted price still stands.
+- The API stamps every alert of one snapshot with the same `alerted_at`, so the catch up watermark keeps the ids at `since`. The first start without state sends nothing. Catch up skips entries older than 30 minutes.
+- Personal deliveries are recorded with the API before sending; only a created record sends. Never send on a failed record, or two instances could double send.
+- `/stop` pauses Telegram only (local `muted` set); the website prefs stay. `/start` without a token resumes. A 403 marks the user blocked for that chat id; a successful relink clears it.
+- Telegram ids above 2^31 are still safe integers in JS, and group and channel ids are negative; the send queue spaces negative ids 3.1 s apart for the 20 per minute group limit.
+- `DRY_RUN=1` never logs in and never writes `DATA_DIR`; it mocks deliveries and linking, and subscribers when `INTERNAL_TOKEN` is unset or the endpoint answers 404.
+- `DATA_DIR` must be writable by distroless `nonroot`: the Dockerfile copies an owned `/app/data` so the named volume inherits it. A bind mount would need `chown 65532`. The volume keeps its old name `opencapper-telegram_opencapper-telegram-data`.
+- `openapi-typescript` needs the TypeScript 5 JS API, which TypeScript 7 lacks, so `api:types` runs it through `bunx`.
 - Komodo: the compose service needs `env_file: .env` or the container gets no env. Network `proxy` is external and must already exist on the host.
 - Long polling: only one instance per token may run, a second one gets 409 Conflict.
 - The shipped artifact is the `bun build --compile` binary from the Dockerfile; `bun run build` builds the same into `dist/bot`.

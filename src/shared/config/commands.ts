@@ -1,8 +1,7 @@
 export const COMMANDS = [
-  { command: "pick", description: "Lock a pick at the current market odds" },
-  { command: "recap", description: "Record of every capper in this chat" },
-  { command: "record", description: "A capper's verified record" },
-  { command: "leaderboard", description: "Top cappers by ROI" },
-  { command: "verify", description: "Link to the public proof of a pick" },
+  { command: "alerts", description: "Value bet alerts in this chat" },
+  { command: "me", description: "Your personal alert status" },
+  { command: "stop", description: "Pause your personal alerts" },
+  { command: "start", description: "Link your account or resume alerts" },
   { command: "help", description: "How this bot works" },
 ] as const;

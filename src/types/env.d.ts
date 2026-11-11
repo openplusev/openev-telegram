@@ -1,8 +1,9 @@
 interface BotEnvironment {
   TELEGRAM_BOT_TOKEN?: string;
-  BOT_API_TOKEN?: string;
-  OPENCAPPER_API_URL?: string;
-  WEBSITE_URL?: string;
+  OPENEV_API_URL?: string;
+  OPENEV_WEBSITE_URL?: string;
+  INTERNAL_TOKEN?: string;
+  DRY_RUN?: string;
   LOG_LEVEL?: string;
   DATA_DIR?: string;
 }

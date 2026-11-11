@@ -8,10 +8,12 @@
     "start": "bun src/main.ts",
     "build": "bun build --compile --production src/main.ts --outfile dist/bot",
     "typecheck": "tsc --noEmit",
-    "prettier": "prettier -w ."
+    "prettier": "prettier -w .",
+    "api:types": "bunx openapi-typescript@7.13.0 ${OPENEV_API_URL:-http://127.0.0.1:8104}/v1/openapi.json -o src/lib/openev/schema.d.ts"
   },
   "dependencies": {
     "grammy": "1.46.0",
+    "openapi-fetch": "0.17.0",
     "pino": "10.4.0"
   },
   "devDependencies": {

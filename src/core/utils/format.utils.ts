@@ -1,43 +1,93 @@
-// Telegram caps a message at 4096 characters; leave room for header and footer.
-export const MESSAGE_BUDGET = 3800;
+// Selection and market wording mirrors the web app (openev src/lib/format.ts).
+interface Selectable {
+  market: string;
+  period: string;
+  side: string;
+  line?: string | null;
+  home: string;
+  away: string;
+}
 
-export function fitLines(lines: string[], limit: number): string {
-  let content = "";
-  for (const line of lines) {
-    if (content.length + line.length + 1 > limit) break;
-    content += (content ? "\n" : "") + line;
+function signed(line: number): string {
+  return line > 0 ? `+${line}` : String(line);
+}
+
+export function sideName(sel: Selectable): string {
+  const line = Number(sel.line);
+  if (sel.market === "total") {
+    return `${sel.side === "over" ? "Over" : "Under"} ${line}`;
   }
-  return content;
+  if (sel.side === "draw") return "Draw";
+  const team = sel.side === "home" ? sel.home : sel.away;
+  if (sel.market === "asian_handicap") {
+    return `${team} ${signed(sel.side === "home" ? line : -line)}`;
+  }
+  return team;
 }
 
-export function formatUnits(units: number): string {
-  return `${units > 0 ? "+" : ""}${units.toFixed(2)}u`;
-}
-
-export function formatRoi(roi: number): string {
-  return `${roi > 0 ? "+" : ""}${(roi * 100).toFixed(1)}%`;
-}
-
-export function formatOdds(odds: number): string {
-  return odds > 0 ? `+${odds}` : String(odds);
-}
-
-export function formatRecord(s: {
-  wins: number;
-  losses: number;
-  pushes: number;
+export function marketName(sel: {
+  market: string;
+  period: string;
+  line?: string | null;
 }): string {
-  return `${s.wins}W ${s.losses}L${s.pushes ? ` ${s.pushes}P` : ""}`;
+  const period = sel.period === "first_half" ? ", 1st half" : "";
+  if (sel.market === "three_way") return `Match result${period}`;
+  if (sel.market === "total") return `Total ${Number(sel.line)}${period}`;
+  if (sel.market === "asian_handicap") {
+    return `Asian handicap ${signed(Number(sel.line))}${period}`;
+  }
+  return `Moneyline${period}`;
 }
 
-export function formatUtc(iso: string): string {
-  const when = new Date(iso).toLocaleString("en-US", {
-    month: "short",
+// League names put a spaced hyphen between country and league; messages show a comma.
+export function leagueName(league: string): string {
+  return league.replace(/\s+-\s+/g, ", ");
+}
+
+export function decimalOdds(odds: string | number): string {
+  return Number(odds).toFixed(2);
+}
+
+export function percent(x: number): string {
+  return `${x >= 0 ? "+" : ""}${(x * 100).toFixed(1)}%`;
+}
+
+// Share of bankroll; a negative edge stakes nothing.
+export function kelly(odds: number, probability: number, fraction: number) {
+  const b = odds - 1;
+  if (b <= 0) return 0;
+  return Math.max(0, ((b * probability - (1 - probability)) / b) * fraction);
+}
+
+export function kellyLabel(fraction: number): string {
+  if (fraction === 1) return "full Kelly";
+  if (fraction === 0.5) return "half Kelly";
+  if (fraction === 0.25) return "quarter Kelly";
+  return `${fraction} Kelly`;
+}
+
+function relative(ms: number): string {
+  const minutes = Math.round(Math.abs(ms) / 60_000);
+  const span =
+    minutes < 60
+      ? `${minutes}m`
+      : minutes < 48 * 60
+        ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+        : `${Math.round(minutes / 1440)} days`;
+  return ms >= 0 ? `in ${span}` : `${span} ago`;
+}
+
+// Telegram has no client side timestamps, so kickoff is UTC plus a relative hint.
+export function formatKickoff(iso: string, now = Date.now()): string {
+  const at = new Date(iso);
+  const when = at.toLocaleString("en-GB", {
+    weekday: "short",
     day: "numeric",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "UTC",
     hour12: false,
   });
-  return `${when} UTC`;
+  return `${when} UTC (${relative(at.getTime() - now)})`;
 }

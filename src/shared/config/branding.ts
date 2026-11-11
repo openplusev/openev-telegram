@@ -1,12 +1,19 @@
-export const BOT_NAME = "OpenCapper";
-export const WEBSITE_URL = (
-  process.env.WEBSITE_URL?.trim() || "https://opencapper.coding-global.com"
+export const BOT_NAME = "OpenEV";
+
+export const OPENEV_WEBSITE_URL = (
+  process.env.OPENEV_WEBSITE_URL?.trim() || "https://openev.coding-global.com"
 ).replace(/\/+$/, "");
 
-export function profileUrl(username: string): string {
-  return `${WEBSITE_URL}/en/u/${encodeURIComponent(username)}`;
+const SITE = `${OPENEV_WEBSITE_URL}/en`;
+
+export function betUrl(id: string): string {
+  return `${SITE}/value-bets/${encodeURIComponent(id)}`;
 }
 
-export function verifyUrl(pick: string): string {
-  return `${WEBSITE_URL}/en/verify?pick=${encodeURIComponent(pick)}`;
+export function gameUrl(id: string): string {
+  return `${SITE}/games/${encodeURIComponent(id)}`;
 }
+
+export const ARBS_URL = `${SITE}/arbs`;
+export const PROOF_URL = `${SITE}/proof`;
+export const SETTINGS_URL = `${SITE}/settings`;
