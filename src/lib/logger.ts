@@ -3,7 +3,7 @@ import pino from "pino";
 const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === "development";
 
 const root = pino({
-  name: "opencapper-telegram",
+  name: "openev-telegram",
   level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
   redact: {
     paths: ["token", "*.token", "authorization", "*.authorization"],

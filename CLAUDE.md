@@ -1,7 +1,7 @@
-# CLAUDE.md: opencapper-telegram
+# CLAUDE.md: openev-telegram
 
-Product decisions live in `../claude.md`. The web app and API are the `opencapper` repo, the
-Discord bot is `opencapper-bot`; this repo mirrors the bot's structure.
+Product decisions live in `../claude.md`. The web app and API are the `openev` repo, the
+Discord bot is `openev-bot`; this repo mirrors the bot's structure.
 
 ## Rules
 
@@ -16,7 +16,7 @@ Discord bot is `opencapper-bot`; this repo mirrors the bot's structure.
 
 ## Traps
 
-- The API contract and types are mirrored by hand from `opencapper-bot/src/lib/api.ts` (no shared package) plus the Telegram parts. Change the API, both bots and both READMEs together.
+- The API contract and types are mirrored by hand from `openev-bot/src/lib/api.ts` (no shared package) plus the Telegram parts. Change the API, both bots and both READMEs together.
 - Telegram chats map to `guildId` `tg:<chatId>` (`guildIdFor` in `results.feed.ts`). Group chat ids are negative; a group upgraded to a supergroup gets a new id and starts a fresh record.
 - Every command is a grammY `Composer` and must be added in `src/bot/index.ts`, or it never runs.
 - Callback data is capped at 64 bytes, so `/pick` buttons carry only `pk:<action>:<index>` into the in memory session (`src/core/services/pick.session.ts`). Sessions are keyed by chat and user and bound to one message id; a restart drops them.

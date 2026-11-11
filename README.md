@@ -1,7 +1,7 @@
-# opencapper-telegram
+# openev-telegram
 
 Telegram bot for OpenCapper, the verified sports picks platform. The third client of the
-OpenCapper API next to the web app and the Discord bot (`opencapper-bot`). Cappers lock picks
+OpenCapper API next to the web app and the Discord bot (`openev-bot`). Cappers lock picks
 with `/pick`, the API captures the odds and grades them, and `/recap` posts the chat's honest
 record. The bot keeps no database: every read and write goes through the API.
 
