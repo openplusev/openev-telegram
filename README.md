@@ -59,7 +59,7 @@ Arbs list every leg with its odds and stake share of 1000, with buttons All arbs
 - **Personal.** Subscribers are refreshed every 60 s. For every matching subscriber the bot
   first records the delivery and only sends when the record was created (409 means another
   instance or an earlier run already sent it). A user who blocked the bot (403) is logged once
-  and skipped until they link again. Arbs for personal alerts are deduped by the bot only.
+  and skipped until they link again. Personal arbs are recorded the same way with `ledger_id` `arb:<arb id>`.
 - **Rate limits.** One send queue: at most 25 messages a second overall, 1 a second per
   private chat and one every 3.1 s per group or channel (Telegram allows about 30 a second, 1
   a second per chat, 20 a minute per group). A 429 waits `retry_after` and retries. A chat that
@@ -88,8 +88,8 @@ needed. Commands are registered with `setMyCommands` on every start.
 chat settings, the `/start` link confirmation, `/me`, a sample arb, then the newest three open
 ledger alerts replayed through the whole fan out (decisions per chat and per subscriber, plus
 every rendered message), then keeps following live events. Two mock groups are configured
-(defaults with arbs on; 4% EV, medium confidence, four UK books). Without `INTERNAL_TOKEN`, or
-while the internal endpoints answer 404, subscribers are mocked; deliveries and linking are
+(defaults with arbs on; 4% EV, medium confidence, four UK books). Without `INTERNAL_TOKEN`, when
+the subscriber call fails or returns nobody, subscribers are mocked; deliveries and linking are
 always mocked in a dry run.
 
 ```bash
@@ -113,14 +113,14 @@ Public endpoints come from the API's OpenAPI spec: `bun run api:types` regenerat
 and `openapi-fetch` calls them. Used: `GET /v1/ledger`, `GET /v1/value-bets/{id}`,
 `GET /v1/arbs`, `GET /v1/books`, `GET /v1/ws`.
 
-Internal endpoints are not in the spec yet and are checked by hand in
-`src/lib/openev/internal.ts`. Every call sends `X-Internal-Token: <INTERNAL_TOKEN>`.
+Internal endpoints (`src/lib/openev/internal.ts`) use the same generated types. Every call
+sends `X-Internal-Token: <INTERNAL_TOKEN>`.
 
 | Method | Path                             | Body or response                                                                                                                                                                                       |
 | ------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | POST   | `/v1/internal/telegram/link`     | `{token, chat_id, username}` gives `{user_id, display_name}`, or 404 with `code: "invalid_token"`                                                                                                      |
 | GET    | `/v1/internal/alert-subscribers` | `[{user_id, discord_id, display_name, prefs: {enabled, min_ev, books, min_confidence, arbs, min_arb_profit, channels: {discord_dm, telegram}}, bankroll, kelly_fraction, currency, telegram_chat_id}]` |
-| POST   | `/v1/internal/alert-deliveries`  | `{user_id, ledger_id, channel: "telegram"}`; 2xx means recorded, 409 already sent                                                                                                                      |
+| POST   | `/v1/internal/alert-deliveries`  | `{user_id, ledger_id, channel: "telegram"}`; 201 `{created: true}` recorded, 409 already sent; arbs use `ledger_id` `arb:<arb id>`                                                                     |
 
 ## Deploy
 

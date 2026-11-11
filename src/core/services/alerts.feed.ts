@@ -392,13 +392,20 @@ async function handleArbs(arbs: Arb[], snapshot: boolean): Promise<void> {
         });
         continue;
       }
+      const recorded = await recordDelivery(s.userId, `arb:${arb.id}`);
       decisions.push({
         target: "personal",
         chat_id: s.telegramChatId,
         user_id: s.userId,
-        send: true,
-        reason: "matches prefs",
+        send: recorded === "created",
+        reason:
+          recorded === "created"
+            ? "matches prefs"
+            : recorded === "duplicate"
+              ? "delivery already recorded"
+              : "delivery record failed",
       });
+      if (recorded !== "created") continue;
       enqueue(s.telegramChatId, message, personalHooks(s, s.telegramChatId));
     }
     for (const [chatId, settings] of enabledChats()) {
